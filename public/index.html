@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orion Bot Pairing</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <img src="https://cdn-icons-png.flaticon.com/512/5968/5968841.png" alt="WhatsApp" class="logo">
+      <h1>Pair Your Device</h1>
+      <p>Enter your WhatsApp number to receive OTP</p>
+      
+      <div class="form-group">
+        <input 
+          type="tel" 
+          id="phone" 
+          placeholder="+1234567890" 
+          pattern="^\+\d{10,15}$"
+          required
+        >
+        <small>Include country code (e.g. +1, +91)</small>
+      </div>
+
+      <button id="requestBtn" onclick="requestOTP()">Send OTP</button>
+      
+      <div id="loader" class="loader" style="display:none;"></div>
+      <p id="errorText" class="error"></p>
+    </div>
+  </div>
+
+  <script>
+    async function requestOTP() {
+      const phone = document.getElementById('phone').value;
+      const btn = document.getElementById('requestBtn');
+      const loader = document.getElementById('loader');
+      const errorText = document.getElementById('errorText');
+
+      // Validate input
+      if (!phone.match(/^\+\d{10,15}$/)) {
+        errorText.textContent = "Invalid phone format";
+        return;
+      }
+
+      // UI Loading state
+      btn.disabled = true;
+      loader.style.display = 'block';
+      errorText.textContent = '';
+
+      try {
+        const response = await fetch('/api/request-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Redirect to verification page
+          window.location.href = `/verify.html?sessionId=${data.sessionId}`;
+        } else {
+          errorText.textContent = data.error || "Failed to send OTP";
+        }
+      } catch (error) {
+        errorText.textContent = "Network error occurred";
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('phone').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') requestOTP();
+    });
+  </script>
+</body>
+</html>
