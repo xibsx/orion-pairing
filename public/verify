@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify OTP | Orion</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <img src="https://cdn-icons-png.flaticon.com/512/5968/5968841.png" alt="WhatsApp" class="logo">
+      <h1>Enter Verification Code</h1>
+      <p id="phoneText">Code sent to +1234567890</p>
+      
+      <div class="otp-container">
+        <input type="text" id="otp1" maxlength="1" oninput="moveToNext(1)">
+        <input type="text" id="otp2" maxlength="1" oninput="moveToNext(2)">
+        <input type="text" id="otp3" maxlength="1" oninput="moveToNext(3)">
+        <input type="text" id="otp4" maxlength="1" oninput="moveToNext(4)">
+        <input type="text" id="otp5" maxlength="1" oninput="moveToNext(5)">
+        <input type="text" id="otp6" maxlength="1">
+      </div>
+
+      <button id="verifyBtn" onclick="verifyOTP()">Verify</button>
+      <p class="resend">Didn't receive code? <a href="#" onclick="resendOTP()">Resend</a></p>
+      
+      <div id="loader" class="loader" style="display:none;"></div>
+      <p id="errorText" class="error"></p>
+      <p id="successText" class="success" style="display:none;"></p>
+    </div>
+  </div>
+
+  <script>
+    // Get session ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('sessionId');
+
+    // Auto-focus first OTP input
+    document.getElementById('otp1').focus();
+
+    function moveToNext(current) {
+      const next = current + 1;
+      if (document.getElementById(`otp${current}`).value && next <= 6) {
+        document.getElementById(`otp${next}`).focus();
+      }
+    }
+
+    async function verifyOTP() {
+      const otp = [
+        document.getElementById('otp1').value,
+        document.getElementById('otp2').value,
+        document.getElementById('otp3').value,
+        document.getElementById('otp4').value,
+        document.getElementById('otp5').value,
+        document.getElementById('otp6').value
+      ].join('');
+
+      const btn = document.getElementById('verifyBtn');
+      const loader = document.getElementById('loader');
+      const errorText = document.getElementById('errorText');
+      const successText = document.getElementById('successText');
+
+      // Validate OTP
+      if (otp.length !== 6 || !/^\d+$/.test(otp)) {
+        errorText.textContent = "Please enter a valid 6-digit code";
+        return;
+      }
+
+      // UI Loading state
+      btn.disabled = true;
+      loader.style.display = 'block';
+      errorText.textContent = '';
+
+      try {
+        const response = await fetch('/api/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, otp })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          successText.style.display = 'block';
+          successText.textContent = "✓ Device paired successfully!";
+          errorText.textContent = '';
+          
+          // Redirect to success page or bot interface
+          setTimeout(() => {
+            window.location.href = `/success.html?sessionId=${sessionId}`;
+          }, 1500);
+        } else {
+          errorText.textContent = data.error || "Invalid verification code";
+        }
+      } catch (error) {
+        errorText.textContent = "Network error occurred";
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    }
+
+    function resendOTP() {
+      // Implement resend logic
+      alert("New OTP requested!");
+    }
+  </script>
+</body>
+</html>
